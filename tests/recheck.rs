@@ -419,3 +419,77 @@ shared!(
         assert!(!pair.decision().is_match());
     }
 );
+shared!(
+    signed_revocations_refuse_each_participant_without_mutation,
+    {
+        let alice = Fixture::new("alice", 34, vec![]).await;
+        let bob = Fixture::new("bob", 50, vec![]).await;
+        let alice_before = alice.wire.clone();
+        let bob_before = bob.wire.clone();
+        let control = alice.policy();
+        let verification = Verification {
+            policy: &control,
+            signed_schema: &alice.schema,
+        };
+        assert!(
+            recheck(
+                alice.input("alice"),
+                bob.input("bob"),
+                &verification,
+                &clean
+            )
+            .unwrap()
+            .decision()
+            .is_match()
+        );
+        let mut issuer =
+            Signer::new("garden", SecretKey::from_seed(&mut [11; 32]), 1000, 10000).unwrap();
+        for (member, age) in [("alice", 34u8), ("bob", 50u8)] {
+            let device = SigningKey::from_bytes(&[age; 32])
+                .verifying_key()
+                .to_bytes();
+            for content in [
+                json!({"members":[member],"devices":[]}),
+                json!({"members":[],"devices":[device]}),
+            ] {
+                let snapshot = json!({
+                    "community": "garden",
+                    "revision": 1,
+                    "policy_epoch": 2,
+                    "content": content,
+                });
+                let signed = issuer
+                    .sign(
+                        Kind::RevocationListSnapshot,
+                        &serde_json::to_vec(&snapshot).unwrap(),
+                        1000,
+                        2000,
+                    )
+                    .unwrap();
+                let mut policy = alice.policy();
+                policy.revocations = &signed;
+                let revoked = Verification {
+                    policy: &policy,
+                    signed_schema: &alice.schema,
+                };
+                assert!(matches!(
+                    recheck(alice.input("alice"), bob.input("bob"), &revoked, &clean),
+                    Err(Error::Publication)
+                ));
+                assert_eq!(alice.wire, alice_before);
+                assert_eq!(bob.wire, bob_before);
+                assert!(
+                    recheck(
+                        alice.input("alice"),
+                        bob.input("bob"),
+                        &verification,
+                        &clean
+                    )
+                    .unwrap()
+                    .decision()
+                    .is_match()
+                );
+            }
+        }
+    }
+);
