@@ -122,7 +122,16 @@ impl Fixture {
                 &clean,
             )
             .unwrap()
-            .commit_publication(&mut store, [1; 32], vec![])
+            .commit_publication(
+                &mut store,
+                cpfl::Validation {
+                    policy: fixture.policy(),
+                    signed_schema: &fixture.schema,
+                    contact: &clean,
+                },
+                [1; 32],
+                vec![],
+            )
             .await
             .unwrap();
         fixture.wire = store.load_pending().unwrap()[0].bytes.clone();
@@ -338,3 +347,10 @@ shared!(wrong_owner_revision_tampering_expiry_and_scope_refuse, {
         .is_err()
     );
 });
+
+// Link maintained profiling support only into the instrumented test binary.
+#[cfg(all(target_arch = "wasm32", owned_browser_coverage))]
+#[wasm_bindgen_test::wasm_bindgen_test]
+fn profiling_runtime_is_linked() {
+    let _ = browser_coverage_runtime::__owned_test_module_signature();
+}
