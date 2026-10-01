@@ -37,7 +37,7 @@ fn clean(_: &str) -> cshm::ContactCheck {
 fn schema() -> cshm::Schema {
     serde_json::from_value(json!({
     "community":"garden","version":1,
-    "public":[{"id":"age","label":"Age","kind":{"type":"integer","min":18,"max":120},"required":true,"filterable":true,"change_preset":"stable","no_contact_details":false}],
+    "public":[{"id":"age","label":"Age","kind":{"type":"integer","min":18,"max":120},"required":true,"filterable":true,"change_preset":"stable","no_contact_details":false}, {"id":"place","label":"Place","kind":{"type":"location"},"required":true,"filterable":true,"change_preset":"occasional","no_contact_details":false}],
     "private":[{"id":"secret","label":"Secret","kind":{"type":"yes_no"},"required":true,"filterable":false,"change_preset":"occasional","no_contact_details":false}]
 })).unwrap()
 }
@@ -50,13 +50,16 @@ struct Fixture {
 }
 impl Fixture {
     async fn new(member: &str, age: u64, rules: Vec<cgrd::Rule>) -> Self {
+        Self::at(member, age, json!({"latitude":0,"longitude":0}), rules).await
+    }
+    async fn at(member: &str, age: u64, place: serde_json::Value, rules: Vec<cgrd::Rule>) -> Self {
         let mut device = Device(SigningKey::from_bytes(&[age as u8; 32]));
         let mut draft = Draft::new(
             member.into(),
             cshm::Profile {
                 community: "garden".into(),
                 schema_version: 1,
-                public: [("age".into(), json!(age))].into(),
+                public: [("age".into(), json!(age)), ("place".into(), place)].into(),
                 private: [("secret".into(), json!(true))].into(),
             },
         )
@@ -354,3 +357,65 @@ shared!(wrong_owner_revision_tampering_expiry_and_scope_refuse, {
 fn profiling_runtime_is_linked() {
     let _ = browser_coverage_runtime::__owned_test_module_signature();
 }
+
+shared!(
+    distance_rules_are_rechecked_by_the_current_guard_in_both_directions,
+    {
+        let within = |max: &str| cgrd::Rule::DistanceRange {
+            field: "place".into(),
+            min_meters: "0".into(),
+            max_meters: max.into(),
+        };
+        let alice = Fixture::at(
+            "alice",
+            34,
+            json!({"latitude":0,"longitude":0}),
+            vec![within("1500")],
+        )
+        .await;
+        let policy = alice.policy();
+        let verification = Verification {
+            policy: &policy,
+            signed_schema: &alice.schema,
+        };
+        for (owner_limit, expected) in [("1500", true), ("500", false)] {
+            let bob = Fixture::at(
+                "bob",
+                50,
+                json!({"latitude":0,"longitude":0.01}),
+                vec![within(owner_limit)],
+            )
+            .await;
+            let pair = recheck(
+                alice.input("alice"),
+                bob.input("bob"),
+                &verification,
+                &clean,
+            )
+            .unwrap();
+            assert_eq!(pair.decision().is_match(), expected);
+            assert_eq!(
+                *pair.decision(),
+                cgrd::matches(pair.requester().participant(), pair.owner().participant())
+            );
+            if !expected {
+                assert_eq!(pair.decision().requester_fields(), ["place"]);
+            }
+        }
+        let distant = Fixture::at(
+            "bob",
+            50,
+            json!({"latitude":0,"longitude":1}),
+            vec![within("200000")],
+        )
+        .await;
+        let pair = recheck(
+            alice.input("alice"),
+            distant.input("bob"),
+            &verification,
+            &clean,
+        )
+        .unwrap();
+        assert!(!pair.decision().is_match());
+    }
+);

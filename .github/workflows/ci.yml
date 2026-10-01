@@ -25,6 +25,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
       - run: |
+          python3 .ci/check-first-party.py
           cargo update
           rustc -Vv > resolution.txt
           date -u +%FT%TZ >> resolution.txt
@@ -82,7 +83,7 @@ jobs:
           name: formatting
           path: formatting.patch
   coverage:
-    needs: check
+    needs: dependency-policy
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
