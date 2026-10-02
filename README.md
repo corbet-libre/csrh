@@ -11,18 +11,22 @@ ports; a `CheckedPair` is not disclosure or key-release authority. See
 
 ## Scope
 
-Search owns the device's bounded current query, cursor and match view, applying
-Lookup pages and deltas through Link. Every candidate is rechecked through Guard
-against the current community and both members' rules. Own rule or block changes
-invalidate the view, and disconnect clears it.
+### Purpose
 
-Search never trusts an unchecked server candidate, downloads the whole roster,
-persists live attendance, ranks members or implements a second evaluator. Real
-location and distance matching belong to Guard. Its intended states are empty,
-loading, current, reset required after a gap/stale epoch, and cleared on departure.
+csrh is the on-device match feed that applies bounded pages and updates from Lookup and re-checks every candidate against the community guard and both members' rules.
 
-Ports cover query, bounded page/delta application, next page, reset and view;
-current local recheck is described in [the contract](docs/CONTRACT.md). Tests must
-reject forged, expired, blocked and foreign-community candidates, handle duplicate
-and missing events, remove an own block before the server update, invalidate on
-rule changes, and match native/browser verdicts to the real server Guard.
+### Owns
+
+The device's current query, cursor, and match view; applying bounded pages and deltas; local re-check of each candidate through cgrd; invalidation when own rules or blocks change; clearing on disconnect. Operation is paged and incremental by design and never loads the full member list.
+
+### Never
+
+Trusting a server candidate without re-checking it; downloading every member; persisting the live roster; running its own ranking or rule engine.
+
+### States
+
+Empty, Loading, Current (query, cursor, epoch), ResetRequired after a gap or stale epoch, and Cleared on departure.
+
+### Test obligations
+
+Forged, expired, blocked, and wrong-community candidates never reach the view; duplicate and gap events are handled safely; native and WebAssembly verdicts agree with the server guard; rule changes invalidate cached results; an own block removes the peer without waiting for the forum update. Shared obligations apply: Rust on current stable for native and WebAssembly with identical test vectors; explicit states with injected clock, randomness, storage, and network ports; full line and branch coverage with real round trips and injected delay, duplication, loss, cancellation, clock regression, corruption, and storage conflicts; per-community isolation with nothing shared across communities; bounded bytes, queues, and work with no identifiers, plaintext, or secrets in errors; reuse of maintained third-party code with no custom cryptography.
