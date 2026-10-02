@@ -2,6 +2,9 @@
 //! and Guard's reciprocal rule engine. No forum session or disclosure authority
 //! is created here; Link's current admission remains an additional prerequisite.
 
+mod view;
+pub use view::{View, ViewError, ViewLimits};
+
 /// Value-free refusal. Detailed crypto and policy errors stay at their owners.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -22,6 +25,7 @@ pub struct Verification<'a> {
 
 /// An expected owner and original publication bytes. Revision floors must come
 /// from the runtime's current state, never from an untrusted network assertion.
+#[derive(Clone, Copy)]
 pub struct Input<'a> {
     /// Expected community-local member identifier.
     pub member: &'a str,

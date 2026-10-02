@@ -1,0 +1,10 @@
+schema = 1
+project = "csrh"
+
+[checks.native]
+kind = "commands"
+commands = [["bash", "ci/native-check.sh"]]
+
+[checks.browser]
+kind = "commands"
+commands = [["bash", "ci/browser-check.sh"]]
