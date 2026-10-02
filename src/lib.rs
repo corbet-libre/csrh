@@ -43,7 +43,29 @@ pub struct CheckedPair {
     decision: cgrd::MatchResult,
 }
 
+/// Public display data from a current reciprocal match. This output carries no
+/// authority and omits device keys, rules, reachability and refusal details.
+#[derive(Clone, serde::Serialize, schemars::JsonSchema)]
+pub struct Discovery {
+    pub community: String,
+    pub member: String,
+    pub profile_revision: u64,
+    pub schema_version: u32,
+    pub public: cshm::Answers,
+}
+
 impl CheckedPair {
+    /// Project only an actual match. Refresh the pair through `View::read` or
+    /// `recheck` before each display; retaining this DTO never retains authority.
+    pub fn discovery(&self) -> Option<Discovery> {
+        self.decision.is_match().then(|| Discovery {
+            community: self.owner.public().community.clone(),
+            member: self.owner.transcript().member.clone(),
+            profile_revision: self.owner.transcript().revision,
+            schema_version: self.owner.public().schema_version,
+            public: self.owner.public().public.clone(),
+        })
+    }
     /// Authenticated requester public projection and signed rules.
     pub fn requester(&self) -> &cpfl::VerifiedPublication {
         &self.requester

@@ -7,7 +7,7 @@ use ckmg::{
 use cpfl::{DeviceSigner, Draft, PortableCodec};
 use csgn::{Kind, SecretKey, Signer};
 use csrh::{Error, Input, Verification, recheck};
-use ed25519_dalek::{Signer as _, SigningKey};
+use ed25519_dalek::{Digest, Sha512, Signer as _, SigningKey};
 use serde_json::json;
 
 #[cfg(target_arch = "wasm32")]
@@ -26,6 +26,9 @@ struct Device(SigningKey);
 impl DeviceSigner for Device {
     fn public_key(&self) -> [u8; 32] {
         self.0.verifying_key().to_bytes()
+    }
+    fn hpke_public_key(&self) -> Result<[u8; 32], cpfl::Error> {
+        Ok(self.0.verifying_key().to_montgomery().to_bytes())
     }
     fn sign(&mut self, bytes: &[u8]) -> Result<[u8; 64], cpfl::Error> {
         Ok(self.0.sign(bytes).to_bytes())
@@ -53,6 +56,15 @@ impl Fixture {
         Self::at(member, age, json!({"latitude":0,"longitude":0}), rules).await
     }
     async fn at(member: &str, age: u64, place: serde_json::Value, rules: Vec<cgrd::Rule>) -> Self {
+        Self::at_revision(member, age, place, rules, 1).await
+    }
+    async fn at_revision(
+        member: &str,
+        age: u64,
+        place: serde_json::Value,
+        rules: Vec<cgrd::Rule>,
+        revision: u64,
+    ) -> Self {
         let mut device = Device(SigningKey::from_bytes(&[age as u8; 32]));
         let mut draft = Draft::new(
             member.into(),
@@ -109,19 +121,26 @@ impl Fixture {
         let mut store = cwst::Store::create(cwst::backend::Memory::new(), &cipher, "garden")
             .await
             .unwrap();
+        // Original maintained conversion for deterministic test device custody.
+        // Production uses the fresh-authorized Keys lender, never caller keys.
+        let hpke: [u8; 32] = Sha512::digest(device.0.as_bytes())[..32]
+            .try_into()
+            .unwrap();
+        let custody =
+            cnvl::Custodian::from_keys(&hpke, &[44; 32], "garden", member, device.public_key())
+                .unwrap();
         draft
             .prepare_publication(
                 &credential,
                 &fixture.policy(),
                 &fixture.schema,
-                1,
+                revision,
                 1,
                 vec![1],
                 0,
                 &mut device,
-                &cipher,
+                &custody,
                 &PortableCodec,
-                &mut SystemEntropy,
                 &clean,
             )
             .unwrap()
@@ -191,6 +210,11 @@ shared!(both_signed_rules_use_the_real_guard_engine, {
     assert_eq!(pair.owner().transcript().member, "bob");
     assert!(pair.decision().is_match());
     assert_eq!(
+        serde_json::to_value(pair.discovery().unwrap()).unwrap(),
+        json!({"community":"garden", "member":"bob", "profile_revision":1,
+               "schema_version":1, "public":{"age":50}})
+    );
+    assert_eq!(
         *pair.decision(),
         cgrd::matches(pair.requester().participant(), pair.owner().participant())
     );
@@ -203,6 +227,7 @@ shared!(both_signed_rules_use_the_real_guard_engine, {
     )
     .unwrap();
     assert!(!refused.decision().is_match());
+    assert!(refused.discovery().is_none());
     assert_eq!(refused.decision().requester_fields(), ["age"]);
     assert!(
         !serde_json::to_string(&refused.decision().requester_fields())
@@ -838,6 +863,119 @@ shared!(
                 &clean
             ),
             Err(ViewError::Rejected)
+        ));
+    }
+);
+
+shared!(
+    bounded_deltas_recheck_add_update_remove_and_refuse_rollback,
+    {
+        let alice = Fixture::new("alice", 34, vec![]).await;
+        let bob = Fixture::new("bob", 50, vec![]).await;
+        let carol = Fixture::new("carol", 42, vec![]).await;
+        let updated =
+            Fixture::at_revision("bob", 51, json!({"latitude":0,"longitude":0}), vec![], 2).await;
+        let equivocation = Fixture::new("bob", 51, vec![]).await;
+        let policy = alice.policy();
+        let verification = Verification {
+            policy: &policy,
+            signed_schema: &alice.schema,
+        };
+        let mut view = view();
+        view.replace(
+            alice.input("alice"),
+            &[bob.input("bob")],
+            &verification,
+            &clean,
+        )
+        .unwrap();
+        view.delta(
+            alice.input("alice"),
+            &[carol.input("carol")],
+            &[],
+            &verification,
+            &clean,
+        )
+        .unwrap();
+        assert_eq!(
+            view.read(alice.input("alice"), &verification, &clean)
+                .unwrap()
+                .len(),
+            2
+        );
+        view.delta(
+            alice.input("alice"),
+            &[updated.input("bob")],
+            &["carol"],
+            &verification,
+            &clean,
+        )
+        .unwrap();
+        let page = view
+            .read(alice.input("alice"), &verification, &clean)
+            .unwrap();
+        assert_eq!(page.len(), 1);
+        assert_eq!(page[0].owner().transcript().revision, 2);
+        assert!(
+            view.delta(
+                alice.input("alice"),
+                &[bob.input("bob")],
+                &[],
+                &verification,
+                &clean
+            )
+            .is_err()
+        );
+        assert!(matches!(
+            view.read(alice.input("alice"), &verification, &clean),
+            Err(csrh::ViewError::ResetRequired)
+        ));
+        view.replace(
+            alice.input("alice"),
+            &[bob.input("bob")],
+            &verification,
+            &clean,
+        )
+        .unwrap();
+        assert!(matches!(
+            view.delta(
+                alice.input("alice"),
+                &[equivocation.input("bob")],
+                &[],
+                &verification,
+                &clean
+            ),
+            Err(csrh::ViewError::Binding)
+        ));
+        for removed in [vec!["unknown"], vec!["bob", "bob"]] {
+            view.replace(
+                alice.input("alice"),
+                &[bob.input("bob")],
+                &verification,
+                &clean,
+            )
+            .unwrap();
+            assert!(matches!(
+                view.delta(alice.input("alice"), &[], &removed, &verification, &clean),
+                Err(csrh::ViewError::Binding)
+            ));
+        }
+        view.replace(
+            alice.input("alice"),
+            &[bob.input("bob")],
+            &verification,
+            &clean,
+        )
+        .unwrap();
+        assert!(matches!(
+            view.delta(
+                alice.input("alice"),
+                &[carol.input("carol"), carol.input("carol")],
+                &[],
+                &verification,
+                &clean
+            ),
+            Err(csrh::ViewError::Binding)
         ));
     }
 );

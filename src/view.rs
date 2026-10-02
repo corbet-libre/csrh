@@ -143,6 +143,70 @@ impl View {
         Ok(pairs)
     }
 
+    /// Apply one bounded current-window delta to the retained original page.
+    /// Removed IDs reveal no new publication. Every retained or upserted peer is
+    /// rechecked with current local authority before the new view is adopted.
+    pub fn delta(
+        &mut self,
+        requester: Input<'_>,
+        upserts: &[Input<'_>],
+        removed: &[&str],
+        verification: &Verification<'_>,
+        contact: &impl Fn(&str) -> cshm::ContactCheck,
+    ) -> Result<(), ViewError> {
+        let Some(page) = self.page.take() else {
+            return Err(ViewError::ResetRequired);
+        };
+        if requester.member != page.requester.member
+            || requester.bytes != page.requester.bytes
+            || verification.policy.policy.community != page.community
+            || verification.policy.policy.minimum_epoch != page.epoch
+            || verification.signed_schema != page.schema
+            || verification.policy.policy.now < page.now
+        {
+            return Err(ViewError::ResetRequired);
+        }
+        if upserts.len() > self.limits.candidates || removed.len() > self.limits.candidates {
+            return Err(ViewError::Capacity);
+        }
+        let mut unique = std::collections::BTreeSet::new();
+        for member in removed {
+            if !unique.insert(*member) || !page.candidates.iter().any(|old| old.member == *member) {
+                return Err(ViewError::Binding);
+            }
+        }
+        let mut candidates = page.candidates;
+        candidates.retain(|old| !removed.contains(&old.member.as_str()));
+        for update in upserts {
+            if !unique.insert(update.member) {
+                return Err(ViewError::Binding);
+            }
+            let floor = candidates
+                .iter()
+                .find(|old| old.member == update.member)
+                .map_or(update.minimum_revision, |old| {
+                    old.revision.max(update.minimum_revision)
+                });
+            let input = Input {
+                minimum_revision: floor,
+                ..*update
+            };
+            let pair = matching(requester, input, verification, contact)?;
+            if candidates.iter().any(|old| {
+                old.member == update.member
+                    && old.revision == pair.owner().transcript().revision
+                    && old.bytes != update.bytes
+            }) {
+                return Err(ViewError::Binding);
+            }
+            candidates.retain(|old| old.member != update.member);
+            candidates.push(save(input, pair.owner().transcript().revision));
+        }
+        candidates.sort_by(|a, b| a.member.cmp(&b.member));
+        let inputs: Vec<_> = candidates.iter().map(Saved::input).collect();
+        self.replace(requester, &inputs, verification, contact)
+    }
+
     /// Apply an authoritative local block/removal immediately. A missing member
     /// is harmless. No block list is retained; Contacts remains its sole owner.
     pub fn remove(&mut self, member: &str) {

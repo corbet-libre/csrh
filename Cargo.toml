@@ -14,8 +14,11 @@ crate-type = ["rlib"]
 cpfl = { git = "https://github.com/corbet-foss/cpfl", branch = "main" }
 cgrd = { git = "https://github.com/corbet-foss/cgrd", branch = "main", default-features = false }
 cshm = { git = "https://github.com/corbet-foss/cshm", branch = "main" }
+serde = { version = "1", features = ["derive"] }
+schemars = "1"
 
 [dev-dependencies]
+cnvl = { git = "https://github.com/corbet-foss/cnvl", branch = "main" }
 ckmg = { git = "https://github.com/corbet-foss/ckmg", branch = "main" }
 cwst = { git = "https://github.com/corbet-foss/cwst", branch = "main" }
 csgn = { git = "https://github.com/corbet-foss/csgn", branch = "main", default-features = false, features = ["volatile-signer"] }
