@@ -4,21 +4,24 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 description = "Search for device-side community composition"
-repository = "https://github.com/corbet-foss/csrh"
+repository = "https://git.corbet.ch/corbet-foss/csrh.git"
 license = "LGPL-3.0-only WITH LGPL-3.0-linking-exception"
 
 [lib]
 crate-type = ["rlib"]
 
 [dependencies]
-cpfl = { git = "https://github.com/corbet-foss/cpfl", branch = "main" }
-cgrd = { git = "https://github.com/corbet-foss/cgrd", branch = "main", default-features = false }
-cshm = { git = "https://github.com/corbet-foss/cshm", branch = "main" }
+cpfl = { git = "https://git.corbet.ch/corbet-foss/cpfl.git", branch = "v01" }
+cgrd = { git = "https://git.corbet.ch/corbet-foss/cgrd.git", branch = "v01", default-features = false }
+cshm = { git = "https://git.corbet.ch/corbet-foss/cshm.git", branch = "v01" }
+serde = { version = "1", features = ["derive"] }
+schemars = "1"
 
 [dev-dependencies]
-ckmg = { git = "https://github.com/corbet-foss/ckmg", branch = "main" }
-cwst = { git = "https://github.com/corbet-foss/cwst", branch = "main" }
-csgn = { git = "https://github.com/corbet-foss/csgn", branch = "main", default-features = false, features = ["volatile-signer"] }
+cnvl = { git = "https://git.corbet.ch/corbet-foss/cnvl.git", branch = "v01" }
+ckmg = { git = "https://git.corbet.ch/corbet-foss/ckmg.git", branch = "v01" }
+cwst = { git = "https://git.corbet.ch/corbet-foss/cwst.git", branch = "v01" }
+csgn = { git = "https://git.corbet.ch/corbet-foss/csgn.git", branch = "v01", default-features = false, features = ["volatile-signer"] }
 ed25519-dalek = { version = "3", default-features = false, features = ["fast"] }
 serde_json = "1"
 futures-executor = "0.3"
