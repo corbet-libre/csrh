@@ -260,7 +260,7 @@ checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 [[package]]
 name = "cgrd"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cgrd?branch=main#d1cacbdb863534183d27de468359f657aa7174fa"
+source = "git+https://github.com/corbet-foss/cgrd?branch=main#fd3929858ca29ac5c228a08bc11ac0f7e575176f"
 dependencies = [
  "bigdecimal",
  "cpns",
@@ -343,7 +343,7 @@ dependencies = [
 [[package]]
 name = "ckmg"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/ckmg?branch=main#08c47d7495b67dc28a795075d9d6ebb65667f663"
+source = "git+https://github.com/corbet-foss/ckmg?branch=main#86beae6226af7786b3dba7d2511181a4c0a276ae"
 dependencies = [
  "blake3",
  "chacha20poly1305",
@@ -369,7 +369,7 @@ checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 [[package]]
 name = "cnvl"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cnvl?branch=main#eabf269b5d1d85a194911dbd19f6cf49d34892ea"
+source = "git+https://github.com/corbet-foss/cnvl?branch=main#f7b669e6b62dc79786cdf1f2eeefa9dd435477fd"
 dependencies = [
  "chacha20poly1305",
  "ckmg",
@@ -403,7 +403,7 @@ dependencies = [
 [[package]]
 name = "cpfl"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cpfl?branch=main#038750818f149b5c1736f74baa36633f26cf75b0"
+source = "git+https://github.com/corbet-foss/cpfl?branch=main#d756d6bf4f570397db7180a9f2f183bccd3432a1"
 dependencies = [
  "blake3",
  "cgrd",
@@ -424,7 +424,7 @@ dependencies = [
 [[package]]
 name = "cpns"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cpns?branch=main#7b189964a9513f937ba774d603d4b5a327df640b"
+source = "git+https://github.com/corbet-foss/cpns?branch=main#1b48250510323dea37388f394d1fd5be2e04d2cb"
 dependencies = [
  "getrandom 0.4.3",
  "sha2",
@@ -435,7 +435,7 @@ dependencies = [
 [[package]]
 name = "cprz"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cprz?branch=main#29408cbba494f2eb02a7f5b6157b793a82905688"
+source = "git+https://github.com/corbet-foss/cprz?branch=main#12bb1986310cecfbc9846cf0981f458b828507a4"
 dependencies = [
  "cprz-blob",
 ]
@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "cprz-blob"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cprz?branch=main#29408cbba494f2eb02a7f5b6157b793a82905688"
+source = "git+https://github.com/corbet-foss/cprz?branch=main#12bb1986310cecfbc9846cf0981f458b828507a4"
 dependencies = [
  "brotli",
 ]
@@ -451,7 +451,7 @@ dependencies = [
 [[package]]
 name = "cprz-pad"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cprz?branch=main#29408cbba494f2eb02a7f5b6157b793a82905688"
+source = "git+https://github.com/corbet-foss/cprz?branch=main#12bb1986310cecfbc9846cf0981f458b828507a4"
 
 [[package]]
 name = "cpufeatures"
@@ -465,7 +465,7 @@ dependencies = [
 [[package]]
 name = "crbk"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/crbk?branch=main#36025fadb8a364857ef893939cd739d48da891b0"
+source = "git+https://github.com/corbet-foss/crbk?branch=main#5daac7f558066c4fde26b58ebadb9e44f3d91ee7"
 dependencies = [
  "serde",
  "serde_json",
@@ -490,7 +490,7 @@ dependencies = [
 [[package]]
 name = "csgn"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/csgn?branch=main#96f946b89efd67d79f841259ee914a4f6f43dcd0"
+source = "git+https://github.com/corbet-foss/csgn?branch=main#eae94a676b5658c55588cbb903c9d88a088cf81b"
 dependencies = [
  "ciborium-ll",
  "coset",
@@ -503,7 +503,7 @@ dependencies = [
 [[package]]
 name = "cshm"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cshm?branch=main#2fddfc89a3e3503df1430cd22eaf090ca52bc694"
+source = "git+https://github.com/corbet-foss/cshm?branch=main#812b39b7a7621da7e5efa42ddf0be4ab568f224f"
 dependencies = [
  "bigdecimal",
  "jsonschema",
@@ -568,7 +568,7 @@ dependencies = [
 [[package]]
 name = "cwst"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/cwst?branch=main#f1681ebb167f3d3328f994a6e5d8d5c44f5e68ea"
+source = "git+https://github.com/corbet-foss/cwst?branch=main#d3e16e17907028ac7700b2bc730eac24508a9280"
 dependencies = [
  "atomicwrites",
  "blake3",
