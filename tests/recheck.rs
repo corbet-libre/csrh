@@ -83,6 +83,8 @@ impl Fixture {
         let mut issuer =
             Signer::new("garden", SecretKey::from_seed(&mut [11; 32]), 1000, 10000).unwrap();
         let credential = cgrd::Credential {
+            purpose: cgrd::CredentialPurpose::CommunityCredentialV2,
+            issuance_action: "admission".into(),
             community: "garden".into(),
             member: member.into(),
             handle: "mountain".into(),
@@ -104,7 +106,7 @@ impl Fixture {
         );
         let settings = sign(
             Kind::SettingsSnapshot,
-            json!({"community":"garden","revision":1,"policy_epoch":2,"content":{"action/admission":{"all_of":[],"any_of":[],"k_of_n":null,"maximum_proof_age":null,"membership":["admitted"]}}}),
+            json!({"community":"garden","revision":1,"policy_epoch":2,"content":{"action/admission":{"all_of":[],"any_of":[],"k_of_n":null,"maximum_proof_age":null,"membership":["admitted"]},"action/other":{"all_of":[],"any_of":[],"k_of_n":null,"maximum_proof_age":null,"membership":["admitted"]}}}),
         );
         let revocations = sign(
             Kind::RevocationListSnapshot,
@@ -163,6 +165,7 @@ impl Fixture {
         cgrd::PublishedPolicy {
             policy: cgrd::Policy {
                 community: "garden",
+                expected_issuance_action: "admission",
                 keys: &self.keys,
                 now: 1100,
                 minimum_epoch: 2,
@@ -173,7 +176,6 @@ impl Fixture {
             },
             revocations: &self.revocations,
             minimum_revocations_revision: 1,
-            action: "admission",
         }
     }
     fn input<'a>(&'a self, member: &'a str) -> Input<'a> {
@@ -191,6 +193,38 @@ fn range(min: &str, max: &str) -> cgrd::Rule {
         max: max.into(),
     }
 }
+shared!(signed_issuer_action_cannot_choose_the_runtime_action, {
+    let alice = Fixture::new("alice", 34, vec![]).await;
+    let bob = Fixture::new("bob", 50, vec![]).await;
+    let mut policy = alice.policy();
+    assert!(
+        recheck(
+            alice.input("alice"),
+            bob.input("bob"),
+            &Verification {
+                policy: &policy,
+                signed_schema: &alice.schema,
+            },
+            &clean,
+        )
+        .is_ok()
+    );
+    // Both actions exist in the original signed settings. The runtime selects
+    // its expected action independently of the signed credential's action.
+    policy.policy.expected_issuance_action = "other";
+    assert!(matches!(
+        recheck(
+            alice.input("alice"),
+            bob.input("bob"),
+            &Verification {
+                policy: &policy,
+                signed_schema: &alice.schema,
+            },
+            &clean,
+        ),
+        Err(Error::Publication)
+    ));
+});
 shared!(both_signed_rules_use_the_real_guard_engine, {
     let alice = Fixture::new("alice", 34, vec![range("40", "60")]).await;
     let bob = Fixture::new("bob", 50, vec![range("30", "40")]).await;
