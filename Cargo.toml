@@ -11,7 +11,7 @@ license = "LGPL-3.0-only WITH LGPL-3.0-linking-exception"
 crate-type = ["rlib"]
 
 [dependencies]
-cpfl = { git = "https://git.corbet.ch/corbet-foss/cpfl.git", branch = "v01" }
+cpfl = { git = "https://git.corbet.ch/corbet-foss/cpfl.git", branch = "main" }
 cgrd = { git = "https://git.corbet.ch/corbet-foss/cgrd", branch = "main", default-features = false }
 cshm = { git = "https://git.corbet.ch/corbet-foss/cshm", branch = "main" }
 serde = { version = "1", features = ["derive"] }
