@@ -2,6 +2,9 @@
 //! and Guard's reciprocal rule engine. No forum session or disclosure authority
 //! is created here; Link's current admission remains an additional prerequisite.
 
+mod view;
+pub use view::{View, ViewError, ViewLimits};
+
 /// Value-free refusal. Detailed crypto and policy errors stay at their owners.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -22,6 +25,7 @@ pub struct Verification<'a> {
 
 /// An expected owner and original publication bytes. Revision floors must come
 /// from the runtime's current state, never from an untrusted network assertion.
+#[derive(Clone, Copy)]
 pub struct Input<'a> {
     /// Expected community-local member identifier.
     pub member: &'a str,
@@ -39,7 +43,29 @@ pub struct CheckedPair {
     decision: cgrd::MatchResult,
 }
 
+/// Public display data from a current reciprocal match. This output carries no
+/// authority and omits device keys, rules, reachability and refusal details.
+#[derive(Clone, serde::Serialize, schemars::JsonSchema)]
+pub struct Discovery {
+    pub community: String,
+    pub member: String,
+    pub profile_revision: u64,
+    pub schema_version: u32,
+    pub public: cshm::Answers,
+}
+
 impl CheckedPair {
+    /// Project only an actual match. Refresh the pair through `View::read` or
+    /// `recheck` before each display; retaining this DTO never retains authority.
+    pub fn discovery(&self) -> Option<Discovery> {
+        self.decision.is_match().then(|| Discovery {
+            community: self.owner.public().community.clone(),
+            member: self.owner.transcript().member.clone(),
+            profile_revision: self.owner.transcript().revision,
+            schema_version: self.owner.public().schema_version,
+            public: self.owner.public().public.clone(),
+        })
+    }
     /// Authenticated requester public projection and signed rules.
     pub fn requester(&self) -> &cpfl::VerifiedPublication {
         &self.requester

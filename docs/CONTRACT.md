@@ -12,7 +12,26 @@ then uses the authenticated `VerifiedPublication::participant()` projections.
 It has no deserializer and does not carry live disclosure authority. Remote
 refusals use only Guard's `requester_fields`, not owner rule values or reasons.
 
-The current implementation is local pair validation. Link's current G1/G2/G3
+`View::new(ViewLimits)` configures one bounded received page; both count and total
+original publication bytes have explicit positive limits supplied by the runtime.
+`replace` first clears the old page, verifies even an empty page's requester and
+accepts only unique reciprocal candidates checked from original signed bytes.
+Failure cannot expose a partial or previously cached page. It retains the exact
+requester bytes and each verified positive revision, never only cached verdicts.
+
+`read` requires the current requester publication and current trust. It checks
+community, policy epoch floor, exact signed schema, monotonic time, own original
+bytes and revision floor, then reruns Profile/Guard for every candidate. Fresh
+revocations, expiry and invalid credentials therefore refuse before display.
+Any refusal clears all held bytes. An empty page still checks current requester
+authority. Returned `CheckedPair` values describe that synchronous local check;
+they grant no later disclosure or key-release authority.
+
+`remove(member)` applies an immediate Contacts block or authoritative local
+removal without retaining a duplicate block list. It is not an unversioned remote
+departure API: Link must fence remote generation/revision events before invoking
+it. `clear` forgets the page on departure, generation/query change or a feed gap.
+Link's current G1/G2/G3
 admission and Forum's generated page/delta success types are still required to
 populate a live view. No fabricated page, accepting verifier or transport client
 is supplied. Contacts remains authoritative for immediate blocks; a signed
