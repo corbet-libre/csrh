@@ -52,6 +52,10 @@ pub struct Discovery {
     pub profile_revision: u64,
     pub schema_version: u32,
     pub public: cshm::Answers,
+    /// Display line "vouched for by ..." filled by the Board facade; absent when the
+    /// community hides sponsors or the sponsor cannot be verified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vouched_by: Option<String>,
 }
 
 impl CheckedPair {
@@ -64,6 +68,7 @@ impl CheckedPair {
             profile_revision: self.owner.transcript().revision,
             schema_version: self.owner.public().schema_version,
             public: self.owner.public().public.clone(),
+            vouched_by: None,
         })
     }
     /// Authenticated requester public projection and signed rules.
