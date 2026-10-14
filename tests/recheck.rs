@@ -247,7 +247,7 @@ shared!(both_signed_rules_use_the_real_guard_engine, {
     assert_eq!(
         serde_json::to_value(pair.discovery().unwrap()).unwrap(),
         json!({"community":"garden", "member":"bob", "profile_revision":1,
-               "schema_version":1, "public":{"age":50}})
+               "schema_version":1, "public":{"age":50, "place":{"latitude":0,"longitude":0}}})
     );
     assert_eq!(
         *pair.decision(),
