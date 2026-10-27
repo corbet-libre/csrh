@@ -237,7 +237,7 @@ fn matching(
     contact: &impl Fn(&str) -> cshm::ContactCheck,
 ) -> Result<CheckedPair, ViewError> {
     let pair = recheck(requester, owner, verification, contact).map_err(|_| ViewError::Rejected)?;
-    if !pair.decision().is_match() {
+    if !pair.admits() {
         return Err(ViewError::Rejected);
     }
     Ok(pair)

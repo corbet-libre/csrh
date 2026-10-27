@@ -71,6 +71,15 @@ impl CheckedPair {
             vouched_by: None,
         })
     }
+    /// The one-directional firewall the forum applies: the requester passes
+    /// the owner's rules and every pair-level check. The requester's own
+    /// criteria are not part of it; they only filter `discovery`.
+    pub fn admits(&self) -> bool {
+        self.decision
+            .failures
+            .iter()
+            .all(|failure| failure.owner == Some(cgrd::Side::A))
+    }
     /// Authenticated requester public projection and signed rules.
     pub fn requester(&self) -> &cpfl::VerifiedPublication {
         &self.requester
